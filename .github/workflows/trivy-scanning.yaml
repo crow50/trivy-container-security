@@ -1,0 +1,52 @@
+name: Trivy Container Scan
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    # Set permissions for the job to allow uploading SARIF reports
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+        # Building the Docker image to be scanned
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: docker build -t hello-world-app:${{ github.sha }} .
+
+        # Scanning the Docker image with Trivy
+        # Step will fail if CRITICAL or HIGH severity vulnerabilities are found
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: hello-world-app:${{ github.sha }}
+          format: table
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+        # Generating SARIF report and uploading to GitHub Security tab
+      - name: Run Trivy and generate SARIF report
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: hello-world-app:${{ github.sha }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'

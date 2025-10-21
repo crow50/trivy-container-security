@@ -1,0 +1,7 @@
+assets/
+.github/
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+LICENSE
