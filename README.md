@@ -1,5 +1,7 @@
 # Trivy - Security Scanning for Containers and more
 
+[![Trivy Container Scan](https://github.com/crow50/trivy-container-security/actions/workflows/trivy-scanning.yaml/badge.svg)](https://github.com/crow50/trivy-container-security/actions/workflows/trivy-scanning.yaml)
+
 [Trivy](https://trivy.dev/latest/) is a comprehensive security scanner that is capable of scanning container images, file systems, GitHub repos and more. Trivy is capable of finding OS package and software dependencies, CVEs, [secrets](https://crow50.github.io/Gitleaks-Secret-Scanning/#what-counts-as-a-secret), and IaC issues. 
 
 For this project, I will be using Trivy to demonstrate container image scanning.
@@ -159,6 +161,7 @@ jobs:
   trivy-scan:
     runs-on: ubuntu-latest
 
+    # Set permissions for the job to allow uploading SARIF reports
     permissions:
       contents: read
       security-events: write
@@ -168,21 +171,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+        # Building the Docker image to be scanned
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         run: docker build -t hello-world-app:${{ github.sha }} .
 
+        # Scanning the Docker image with Trivy
+        # Step will fail if CRITICAL or HIGH severity vulnerabilities are found
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: hello-world-app:${{ github.sha }}
           format: table
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
-      - name: Run Trivy vulnerability scanner
+        # Generating SARIF report and uploading to GitHub Security tab
+      - name: Run Trivy and generate SARIF report
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: hello-world-app:${{ github.sha }}
