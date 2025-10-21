@@ -10,16 +10,25 @@ jobs:
   trivy-scan:
     runs-on: ubuntu-latest
 
+    # Set permissions for the job to allow uploading SARIF reports
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
 
+        # Building the Docker image to be scanned
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
         run: docker build -t hello-world-app:${{ github.sha }} .
 
+        # Scanning the Docker image with Trivy
+        # Step will fail if CRITICAL or HIGH severity vulnerabilities are found
       - name: Run Trivy scan
         uses: aquasecurity/trivy-action@0.33.1
         with:
@@ -28,6 +37,7 @@ jobs:
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
 
+        # Generating SARIF report and uploading to GitHub Security tab
       - name: Run Trivy and generate SARIF report
         uses: aquasecurity/trivy-action@0.33.1
         with:

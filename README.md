@@ -1,6 +1,6 @@
 # Trivy - Security Scanning for Containers and more
 
-[Trivy](https://trivy.dev/latest/) is a comprehensive security scanner that is capable of scanning container images, file systems, GitHub repos and more. Trivy is capable of finding OS package and software dependencies, CVEs, [secrets](https://github.com/crow50/Gitleaks-Secret-Scanning?tab=readme-ov-file#what-counts-as-a-secret), and IaC issues. 
+[Trivy](https://trivy.dev/latest/) is a comprehensive security scanner that is capable of scanning container images, file systems, GitHub repos and more. Trivy is capable of finding OS package and software dependencies, CVEs, [secrets](https://crow50.github.io/Gitleaks-Secret-Scanning/#what-counts-as-a-secret), and IaC issues. 
 
 For this project, I will be using Trivy to demonstrate container image scanning.
 
@@ -99,14 +99,14 @@ Our GitHub Actions workflow file `.github/workflows/trivy-scanning.yaml` is set 
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        run: docker build -t hello-world-app . # -t allows us to set the tag flag for our Docker image
+        run: docker build -t hello-world-app:${{ github.sha }} . # -t allows us to set the tag flag for our Docker image
 ```
 
 2. Next, we run the Trivy scan for critical vulnerabilities:
 
 ```yaml
       - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@0.33.1
+        uses: aquasecurity/trivy-action@0.33.1 # Current stable version of Trivy Action
         with:
           image-ref: hello-world-app:${{ github.sha }} # Scan the image built in the previous step specifying the image reference
           format: table # Output format for the scan results
@@ -131,6 +131,19 @@ Our GitHub Actions workflow file `.github/workflows/trivy-scanning.yaml` is set 
           sarif_file: 'trivy-results.sarif'
 ```
 
+This step requires the giving the workflow permission to write to the Security tab. This can be done by enabling the "Read and write permissions" option in the workflow settings. **Beware** that this will effect the default behaviour of all workflows in the repository.
+
+![Actions Security](assets/actions-security.png)
+
+A more granular option is to specify the permissions at the job or step level within the workflow file. This will likely work for public repositories, but private ones will likely need a token.
+
+```yaml
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+```
+
 **Our complete GitHub Actions workflow file looks like this:**
 
 ```yaml
@@ -145,6 +158,11 @@ on:
 jobs:
   trivy-scan:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
 
     steps:
       - name: Checkout code
@@ -177,3 +195,5 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 ```
+
+---
