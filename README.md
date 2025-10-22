@@ -41,14 +41,14 @@ Each layer in a container image can potentially introduce vulnerabilities, espec
 
 ```bash
 cd container-examples
-touch Dockerfile.helloworld
+touch Dockerfile
 ```
 
 4. Build a Docker Image
 
 ```bash
 cd container-examples
-docker build -f Dockerfile.helloworld -t hello-world-app .
+docker build -f Dockerfile -t hello-world-app .
 ```
 
 5. Scan with Trivy
@@ -137,7 +137,8 @@ This step requires the giving the workflow permission to write to the Security t
 
 ![Actions Security](assets/actions-security.png)
 
-A more granular option is to specify the permissions at the job or step level within the workflow file. This will likely work for public repositories, but private ones will likely need a token.
+**Permissions:**
+<br>A more granular option is to specify the permissions at the job or step level within the workflow file. This will likely work for public repositories, but private ones will likely need a token.
 
 ```yaml
     permissions:
@@ -204,3 +205,57 @@ jobs:
 ```
 
 ---
+
+## Conclusion
+
+During this project we setup Trivy for container image scanning locally and in a GitHub Actions Workflow. 
+
+In our workflow we built an image from the Dockerfile, scanned it for CRITICAL and HIGH severity vulnerabilities, and generated a SARIF report which was then uploaded to our GitHub Security tab. 
+
+If all of that is true, you should see something like this in your Security tab:
+
+**Code Scanning Report:**
+![Code Scanning Report](assets/code-scanning-report.png)
+
+**Trivy Tool Security Report:**
+<br>*Note: The Trivy report will only show up if vulnerabilities are found in the scanned image.*
+![Trivy Tool Security Report](assets/trivy-tool-security-report.png)
+
+**Trivy Setup in Security Tools:**
+<br>*Shows us our Trivy integration and when the last scan was run.*
+![Trivy Setup in Security Tools](assets/trivy-setup-security-tools.png)
+
+---
+
+## Additional Trivy Uses and Workflow Examples
+
+### File System Scanning
+
+Trivy can also scan file systems for vulnerabilities. This is useful for checking the security of local files and directories.
+
+```yaml
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL'
+```
+
+### Skip Setup
+
+[Trivy docs](https://github.com/aquasecurity/trivy-action?tab=readme-ov-file#skipping-setup-when-calling-trivy-action-multiple-times) tell us how to skip setup when calling Trivy Action multiple times in a workflow.
+
+```yaml
+  - name: Scan FS without Trivy setup
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          format: table
+          scan-ref: .
+          # On a subsequent call to the action we know trivy is already installed so can skip this
+          skip-setup-trivy: true
+```
+
