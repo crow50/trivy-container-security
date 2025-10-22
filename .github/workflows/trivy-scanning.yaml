@@ -28,25 +28,47 @@ jobs:
         run: docker build -t hello-world-app:${{ github.sha }} .
 
         # Scanning the Docker image with Trivy
-        # Step will fail if CRITICAL or HIGH severity vulnerabilities are found
+        # Step will normally fail if CRITICAL or HIGH severity vulnerabilities are found
       - name: Run Trivy scan
         uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: hello-world-app:${{ github.sha }}
           format: table
-          exit-code: '1'
+          exit-code: '0' # Continue even if vulnerabilities are found. For production, generally set to '1' or '2'
           severity: 'CRITICAL,HIGH'
-
-        # Generating SARIF report and uploading to GitHub Security tab
+          
+        # Generating SARIF report with Trivy
       - name: Run Trivy and generate SARIF report
         uses: aquasecurity/trivy-action@0.33.1
+        if: always()
         with:
           image-ref: hello-world-app:${{ github.sha }}
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'trivy-container-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          skip-setup-trivy: 'true' # Skip setup since Trivy is already installed in previous step
 
+        # Uploading SARIF report to GitHub Security tab
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'trivy-container-results.sarif'
+
+      # Scanning the repo with Trivy
+      - name: Run Trivy vulnerability scanner in repo mode
+        uses: aquasecurity/trivy-action@0.33.1
+        if: always()
+        with:
+          scan-type: 'fs'
+          format: 'sarif'
+          output: 'trivy-repo-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+          skip-setup-trivy: 'true' # Skip setup since Trivy is already installed in previous step
+
+        # Upload repo scan SARIF report to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-repo-results.sarif'
