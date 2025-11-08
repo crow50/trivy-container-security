@@ -41,14 +41,14 @@ Each layer in a container image can potentially introduce vulnerabilities, espec
 
 ```bash
 cd container-examples
-touch Dockerfile.helloworld
+touch Dockerfile
 ```
 
 4. Build a Docker Image
 
 ```bash
 cd container-examples
-docker build -f Dockerfile.helloworld -t hello-world-app .
+docker build -f Dockerfile -t hello-world-app .
 ```
 
 5. Scan with Trivy
@@ -97,53 +97,54 @@ Our GitHub Actions workflow file `.github/workflows/trivy-scanning.yaml` is set 
 1. First we build the Docker image with Buildx:
 
 ```yaml
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+- name: Set up Docker Buildx
+  uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
-        run: docker build -t hello-world-app:${{ github.sha }} . # -t allows us to set the tag flag for our Docker image
+- name: Build Docker image
+  run: docker build -t hello-world-app:${{ github.sha }} . # -t allows us to set the tag flag for our Docker image
 ```
 
 2. Next, we run the Trivy scan for critical vulnerabilities:
 
 ```yaml
-      - name: Run Trivy scan
-        uses: aquasecurity/trivy-action@0.33.1 # Current stable version of Trivy Action
-        with:
-          image-ref: hello-world-app:${{ github.sha }} # Scan the image built in the previous step specifying the image reference
-          format: table # Output format for the scan results
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH' # Only fail the job if CRITICAL or HIGH severity vulnerabilities are found
+- name: Run Trivy scan
+  uses: aquasecurity/trivy-action@0.33.1 # Current stable version of Trivy Action
+  with:
+    image-ref: hello-world-app:${{ github.sha }} # Scan the image built in the previous step specifying the image reference
+    format: table # Output format for the scan results
+    exit-code: '1'
+    severity: 'CRITICAL,HIGH' # Only fail the job if CRITICAL or HIGH severity vulnerabilities are found
 ```
 
 3. Finally, we generate a SARIF report and upload it to the GitHub Security tab:
 
 ```yaml
-      - name: Run Trivy and generate SARIF report
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          image-ref: hello-world-app:${{ github.sha }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
+- name: Run Trivy and generate SARIF report
+  uses: aquasecurity/trivy-action@0.33.1
+  with:
+    image-ref: hello-world-app:${{ github.sha }}
+    format: 'sarif'
+    output: 'trivy-results.sarif'
 
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+- name: Upload Trivy scan results to GitHub Security tab
+  uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: 'trivy-results.sarif'
 ```
 
 This step requires the giving the workflow permission to write to the Security tab. This can be done by enabling the "Read and write permissions" option in the workflow settings. **Beware** that this will effect the default behaviour of all workflows in the repository.
 
 ![Actions Security](assets/actions-security.png)
 
-A more granular option is to specify the permissions at the job or step level within the workflow file. This will likely work for public repositories, but private ones will likely need a token.
+**Permissions:**
+<br>A more granular option is to specify the permissions at the job or step level within the workflow file. This will likely work for public repositories, but private ones will likely need a token.
 
 ```yaml
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
+permissions:
+  contents: read
+  security-events: write
+  actions: read
 ```
 
 **Our complete GitHub Actions workflow file looks like this:**
@@ -204,3 +205,68 @@ jobs:
 ```
 
 ---
+
+## Conclusion
+
+During this project we setup Trivy for container image scanning locally and in a GitHub Actions Workflow. 
+
+In our workflow we built an image from the Dockerfile, scanned it for CRITICAL and HIGH severity vulnerabilities, and generated a SARIF report which was then uploaded to our GitHub Security tab. 
+
+If all of that is true, you should see something like this in your Security tab:
+
+**Code Scanning Report:**
+![Code Scanning Report](assets/code-scanning-report.png)
+
+**Trivy Tool Security Report:**
+<br>*Note: The Trivy report will only show up if vulnerabilities are found in the scanned image.*
+![Trivy Tool Security Report](assets/trivy-tool-security-report.png)
+
+**Trivy Setup in Security Tools:**
+<br>*Shows us our Trivy integration and when the last scan was run.*
+![Trivy Setup in Security Tools](assets/trivy-setup-security-tools.png)
+
+---
+
+## Additional Trivy Uses and Workflow Examples
+
+### File System Scanning
+
+Trivy can also scan file systems for vulnerabilities. This is useful for checking the security of local files and directories.
+
+```yaml
+- name: Run Trivy vulnerability scanner in repo mode
+  uses: aquasecurity/trivy-action@master
+  with:
+    scan-type: 'fs'
+    ignore-unfixed: true
+    format: 'sarif'
+    output: 'trivy-results.sarif'
+    severity: 'CRITICAL'
+```
+
+**Note:** If you desire to upload the SARIF report generated from a file system scan to the GitHub Security tab, you will need and additional `category` value into the upload step like so:
+
+```yaml
+- name: Upload Trivy scan results to GitHub Security tab
+  uses: github/codeql-action/upload-sarif@v3
+  if: always()
+  with:
+    sarif_file: 'trivy-results.sarif'
+    category: 'Trivy File System Scan' # Custom category for file system scans
+```
+
+### Skip Setup
+
+[Trivy docs](https://github.com/aquasecurity/trivy-action?tab=readme-ov-file#skipping-setup-when-calling-trivy-action-multiple-times) tell us how to skip setup when calling Trivy Action multiple times in a workflow.
+
+```yaml
+  - name: Scan FS without Trivy setup
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "fs"
+          format: table
+          scan-ref: .
+          # On a subsequent call to the action we know trivy is already installed so can skip this
+          skip-setup-trivy: true
+```
+
