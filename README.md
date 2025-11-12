@@ -2,7 +2,7 @@
 
 [![Trivy Container Scan](https://github.com/crow50/trivy-container-security/actions/workflows/trivy-scanning.yaml/badge.svg)](https://github.com/crow50/trivy-container-security/actions/workflows/trivy-scanning.yaml)
 
-[Trivy](https://trivy.dev/latest/) is a comprehensive security scanner that is capable of scanning container images, file systems, GitHub repos and more. Trivy is capable of finding OS package and software dependencies, CVEs, [secrets](https://crow50.github.io/Gitleaks-Secret-Scanning/#what-counts-as-a-secret), and IaC issues. 
+[Trivy](https://trivy.dev/) is a comprehensive security scanner that is capable of scanning container images, file systems, GitHub repos and more. Trivy is capable of finding OS package and software dependencies, CVEs, [secrets](https://crow50.github.io/Gitleaks-Secret-Scanning/#what-counts-as-a-secret), and IaC issues. 
 
 For this project, I will be using Trivy to demonstrate container image scanning.
 
@@ -10,7 +10,7 @@ For this project, I will be using Trivy to demonstrate container image scanning.
 
 ## What is Trivy?
 
-[Trivy](https://trivy.dev/latest/), like [Gitleaks](https://gitleaks.io/), is an open-source security scanning tool used in CI/CD environments to find and report potential security vulnerabilities. Trivy focuses on scanning container images, file systems, and Git repositories for known vulnerabilities in OS packages and application dependencies.
+[Trivy](https://trivy.dev/), like [Gitleaks](https://gitleaks.io/), is an open-source security scanning tool used in CI/CD environments to find and report potential security vulnerabilities. Trivy focuses on scanning container images, file systems, and Git repositories for known vulnerabilities in OS packages and application dependencies.
 
 ---
 
@@ -35,7 +35,7 @@ Each layer in a container image can potentially introduce vulnerabilities, espec
 
 1. Install Docker: Ensure Docker is installed on your local machine. You can download it from [here](https://www.docker.com/products/docker-desktop).
 
-2. Install Trivy: Follow the installation instructions from the [official Trivy documentation](https://trivy.dev/latest/getting-started/).
+2. Install Trivy: Follow the installation instructions from the [official Trivy documentation](https://trivy.dev/docs/latest/getting-started/).
 
 3. Create a Dockerfile
 
